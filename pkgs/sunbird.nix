@@ -87,6 +87,19 @@ let
       ];
       startupWMClass = "com.discord.libdiscord";
     })
+    # The client registers itself as the discord:// handler on every launch by
+    # writing this exact file to ~/.local/share/applications, pointing at its
+    # bare binary (no sandbox, no loader) and resetting mimeapps.list. If a file
+    # it didn't write is already there, it leaves both alone. The modules link
+    # this one into place; it routes links through Sunbird instead.
+    (makeDesktopItem {
+      name = "com.discord.libdiscord.url-handler";
+      desktopName = "Sunbird";
+      noDisplay = true;
+      exec = "${launcher}/bin/sunbird --url -- %u";
+      icon = "com.discord.libdiscord";
+      mimeTypes = [ "x-scheme-handler/discord" ];
+    })
   ];
 in
 symlinkJoin {
@@ -101,7 +114,11 @@ symlinkJoin {
   postBuild = ''
     rm -f $out/share/applications/phoenix.desktop
   '';
-  passthru = { inherit phoenix sunbird-loader loaderMode; };
+  passthru = {
+    inherit phoenix sunbird-loader loaderMode;
+    # File name of the link-handler entry, for linking it into ~/.local/share/applications.
+    urlHandler = "com.discord.libdiscord.url-handler.desktop";
+  };
   meta = {
     description = "Phoenix started with the Sunbird loader preloaded";
     homepage = "https://sunbird.tools";

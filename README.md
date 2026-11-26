@@ -24,17 +24,37 @@ inputs.phoenix.url = "git+https://github.com/ardishko/sunbird-nix";
 imports = [ inputs.phoenix.nixosModules.default ];
 programs.sunbird.enable = true;
 # programs.sunbird.package = inputs.phoenix.packages.x86_64-linux.sunbird-mutable;
-
-# or in Home Manager
-imports = [ inputs.phoenix.homeManagerModules.default ];
-programs.sunbird = {
-  enable = true;
-  defaultLinkHandler = true;  # optional
-};
-xdg.mimeApps.enable = true; # required if you use defaultLinkHandler
-
-
 ```
+
+Or per user with Home Manager:
+
+```nix
+imports = [ inputs.phoenix.homeManagerModules.default ];
+programs.sunbird.enable = true;
+# programs.sunbird.defaultLinkHandler = true;  # needs xdg.mimeApps.enable = true
+```
+
+Or just the package, without a module. Add the second part too, or the client takes over link handling again (see Known limits):
+
+```nix
+{ inputs, pkgs, ... }:
+let
+  sunbird = inputs.phoenix.packages.${pkgs.system}.sunbird;
+in
+{
+  home.packages = [ sunbird ];
+  xdg.dataFile."applications/${sunbird.urlHandler}" = {
+    source = "${sunbird}/share/applications/${sunbird.urlHandler}";
+    force = true;
+  };
+}
+```
+
+Quick test: `nix run .` (Sunbird) / `nix run .#gate-only` / `nix run .#phoenix`.
+
+## How the preload works
+
+`sunbird` exports `SUNBIRD_PRELOAD=<loader>` and `SUNBIRD_GATE_ONLY=1` for the gate-only entry, then runs `phoenix`. The FHS env's `/etc/profile` turns `SUNBIRD_PRELOAD` into `LD_PRELOAD` inside the bubblewrap sandbox, so the loader is not injected into bwrap or the outer wrapper. The sandbox also provides what the loader calls at runtime: `libcurl.so.4`, python3 + PyGObject + Ayatana AppIndicator (tray), zenity/kdialog (plugin file picker), wl-copy/xclip/xsel, notify-send, xdg-open.
 
 ## Updating
 
@@ -54,4 +74,5 @@ Nothing binary lives in this repo. `sources.json` holds URLs and hashes; Nix dow
 - The loader URL is unversioned and the file changes every release. A pinned hash only builds while upstream still serves that exact file or it is already in your store. CI narrows the gap but cannot close it without mirroring the file. Between upstream's release and your merge, a fresh build fails with a hash mismatch: merge the PR, or use `sunbird-mutable`.
 - Upstream's launcher kills an already running Phoenix that was started without Sunbird. This one does not: quit the plain client first.
 - In-app "Apply Updates" in Sunbird cannot replace the store copy in `pinned` mode. Use `sunbird-mutable` if you want that.
+- The client registers itself as the link handler on every launch, writing its own URL-handler entry into `~/.local/share/applications` that points at its bare binary (no sandbox, no loader) and resetting `mimeapps.list`. Both modules put their own file at that path, which makes the client leave it alone. With just the package, add the `xdg.dataFile` lines shown under Use.
 - `tests/fake-appimage.nix` is a stand-in AppRun used to check the env and preload path without the real AppImage.

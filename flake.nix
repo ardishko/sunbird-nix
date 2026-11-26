@@ -6,10 +6,10 @@
   outputs =
     { self, nixpkgs }:
     let
-      system = "x86_64-linux";
+      system = "x86_64-linux"; # Phoenix only ships linux-x64
       pkgs = import nixpkgs {
         inherit system;
-        config.allowUnfree = true;
+        config.allowUnfree = true; # Phoenix and the Sunbird loader are unfree binaries
       };
       sources = builtins.fromJSON (builtins.readFile ./sources.json);
     in
@@ -62,6 +62,11 @@
           };
           config = lib.mkIf cfg.enable {
             environment.systemPackages = [ cfg.package ];
+            # Stop the client from registering its bare binary as the discord:// handler
+            # (see pkgs/sunbird.nix): put our entry at that path in every user's home.
+            systemd.user.tmpfiles.rules = [
+              "L+ %h/.local/share/applications/${cfg.package.urlHandler} - - - - ${cfg.package}/share/applications/${cfg.package.urlHandler}"
+            ];
           };
         };
 
@@ -90,6 +95,12 @@
           };
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
+            # Stop the client from registering its bare binary as the discord:// handler
+            # (see pkgs/sunbird.nix). force: replaces the copy the client already wrote.
+            xdg.dataFile."applications/${cfg.package.urlHandler}" = {
+              source = "${cfg.package}/share/applications/${cfg.package.urlHandler}";
+              force = true;
+            };
             xdg.mimeApps.defaultApplications = lib.mkIf cfg.defaultLinkHandler {
               "x-scheme-handler/discord" = [ "sunbird.desktop" ];
             };
@@ -101,7 +112,7 @@
             ];
           };
         };
-      homeModules.default = self.homeManagerModules.default;
+      homeModules.default = self.homeManagerModules.default; # newer HM naming
 
       formatter.${system} = pkgs.nixfmt;
     };
