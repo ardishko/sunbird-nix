@@ -6,10 +6,10 @@
   outputs =
     { self, nixpkgs }:
     let
-      system = "x86_64-linux"; # Phoenix only ships linux-x64
+      system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        config.allowUnfree = true; # Phoenix and the Sunbird loader are unfree binaries
+        config.allowUnfree = true;
       };
       sources = builtins.fromJSON (builtins.readFile ./sources.json);
     in
@@ -64,6 +64,44 @@
             environment.systemPackages = [ cfg.package ];
           };
         };
+
+      homeManagerModules.default =
+        { config, lib, ... }:
+        let
+          cfg = config.programs.sunbird;
+        in
+        {
+          options.programs.sunbird = {
+            enable = lib.mkEnableOption "Phoenix with the Sunbird loader";
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${system}.sunbird;
+              defaultText = lib.literalExpression "inputs.phoenix.packages.x86_64-linux.sunbird";
+              description = "Sunbird package (sunbird-mutable for a self-updating loader, phoenix for the plain client).";
+            };
+            defaultLinkHandler = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = ''
+                Open discord:// links with Sunbird. Needs xdg.mimeApps.enable, which makes
+                Home Manager manage ~/.config/mimeapps.list.
+              '';
+            };
+          };
+          config = lib.mkIf cfg.enable {
+            home.packages = [ cfg.package ];
+            xdg.mimeApps.defaultApplications = lib.mkIf cfg.defaultLinkHandler {
+              "x-scheme-handler/discord" = [ "sunbird.desktop" ];
+            };
+            assertions = [
+              {
+                assertion = cfg.defaultLinkHandler -> config.xdg.mimeApps.enable;
+                message = "programs.sunbird.defaultLinkHandler needs xdg.mimeApps.enable = true.";
+              }
+            ];
+          };
+        };
+      homeModules.default = self.homeManagerModules.default;
 
       formatter.${system} = pkgs.nixfmt;
     };
