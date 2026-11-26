@@ -1,0 +1,12 @@
+{
+  "phoenix": {
+    "version": "2233",
+    "url": "https://dl.redeem.saarland/desktop/2233/linux-x64.AppImage",
+    "hash": "sha256-c4CO5T2i7w3JhFcYQL7A7TMR+p4u8SNsoBxc2C9Vmr4="
+  },
+  "loader": {
+    "version": "2026.11.26.1145-302d435",
+    "url": "https://assets.sunbird.tools/plugins/libphoenix-linux-x86_64.so",
+    "hash": "sha256-DRfPgNw+xhfS4TbqOs1VigJI6bhTGjKPjJS4snc1vFc="
+  }
+}

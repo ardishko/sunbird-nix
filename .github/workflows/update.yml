@@ -1,0 +1,77 @@
+name: update sources
+
+# Checks sunbird.tools and assets.sunbird.tools for a new Phoenix build or
+# loader, verifies the hashes by fetching through Nix, and opens a PR that
+# changes sources.json only. No binaries are committed or uploaded.
+
+on:
+  schedule:
+    - cron: "17 */2 * * *" # every 2 hours; the loader changes often
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-sources
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Refresh sources.json
+        id: update
+        run: |
+          out=$(nix shell nixpkgs#curl nixpkgs#jq nixpkgs#python3 -c bash ./update.sh)
+          echo "$out"
+          {
+            echo 'summary<<EOF'
+            echo "$out"
+            echo EOF
+          } >>"$GITHUB_OUTPUT"
+          if [ "$out" = unchanged ]; then
+            echo changed=false >>"$GITHUB_OUTPUT"
+          else
+            echo changed=true >>"$GITHUB_OUTPUT"
+            echo "phoenix=$(jq -r .phoenix.version sources.json)" >>"$GITHUB_OUTPUT"
+            echo "loader=$(jq -r .loader.version sources.json)" >>"$GITHUB_OUTPUT"
+          fi
+
+      # Fetching through Nix checks the files against the new hashes. The
+      # AppImage (~390 MB) is only downloaded when the Phoenix build changed.
+      - name: Verify
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          nix build --no-link .#sunbird-loader
+          if [ "$(git show HEAD:sources.json | jq -c .phoenix)" != "$(jq -c .phoenix sources.json)" ]; then
+            nix build --no-link .#phoenix.src
+          fi
+          nix flake check --no-build
+
+      - name: Open pull request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: update/sources
+          delete-branch: true
+          commit-message: "sources: phoenix ${{ steps.update.outputs.phoenix }}, loader ${{ steps.update.outputs.loader }}"
+          title: "sources: phoenix ${{ steps.update.outputs.phoenix }}, loader ${{ steps.update.outputs.loader }}"
+          body: |
+            Automated bump from sunbird.tools.
+
+            ```
+            ${{ steps.update.outputs.summary }}
+            ```
+
+            - Phoenix hash is the one listed on sunbird.tools; Nix verified the mirror's file against it.
+            - Loader hash is trust-on-first-use (Sunbird publishes none).
+          add-paths: sources.json
