@@ -30,8 +30,9 @@ imports = [ inputs.phoenix.homeManagerModules.default ];
 programs.sunbird = {
   enable = true;
   defaultLinkHandler = true;  # optional
-  xdg.mimeApps.enable = true; # required if you use defaultLinkHandler
 };
+xdg.mimeApps.enable = true; # required if you use defaultLinkHandler
+
 
 ```
 
