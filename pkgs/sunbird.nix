@@ -22,6 +22,8 @@ assert lib.assertOneOf "loaderMode" loaderMode [
 
 let
   phoenixExe = lib.getExe phoenix;
+  # Absolute path: works in every launcher, no icon-theme lookup involved.
+  iconPath = "${phoenix}/share/icons/hicolor/512x512/apps/com.discord.libdiscord.png";
   pinned = "${sunbird-loader}/lib/libphoenix.so";
 
   # Mirrors the update block of upstream's generated launcher.
@@ -67,7 +69,7 @@ let
       desktopName = "Sunbird";
       comment = "Phoenix with Sunbird";
       exec = "sunbird %U";
-      icon = "com.discord.libdiscord";
+      icon = iconPath;
       categories = [
         "Network"
         "InstantMessaging"
@@ -80,7 +82,7 @@ let
       desktopName = "Sunbird (access gate only)";
       comment = "Phoenix past the access gate, without plugins";
       exec = "sunbird-gate-only %U";
-      icon = "com.discord.libdiscord";
+      icon = iconPath;
       categories = [
         "Network"
         "InstantMessaging"
@@ -97,7 +99,7 @@ let
       desktopName = "Sunbird";
       noDisplay = true;
       exec = "${launcher}/bin/sunbird --url -- %u";
-      icon = "com.discord.libdiscord";
+      icon = iconPath;
       mimeTypes = [ "x-scheme-handler/discord" ];
     })
   ];

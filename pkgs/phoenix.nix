@@ -28,7 +28,7 @@ let
     desktopName = "Phoenix";
     comment = "Phoenix desktop client (build ${version})";
     exec = "${pname} %U";
-    icon = "com.discord.libdiscord";
+    icon = "${contents}/usr/share/icons/hicolor/512x512/apps/com.discord.libdiscord.png";
     categories = [
       "Network"
       "InstantMessaging"
