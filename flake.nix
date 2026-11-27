@@ -102,7 +102,7 @@
               force = true;
             };
             xdg.mimeApps.defaultApplications = lib.mkIf cfg.defaultLinkHandler {
-              "x-scheme-handler/discord" = [ "sunbird.desktop" ];
+              "x-scheme-handler/discord" = [ "com.discord.libdiscord.desktop" ];
             };
             assertions = [
               {

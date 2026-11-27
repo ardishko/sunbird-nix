@@ -24,7 +24,7 @@ let
       appimageTools.extract { inherit pname version src; };
 
   desktopItem = makeDesktopItem {
-    name = pname;
+    name = "com.discord.libdiscord"; # matches the window's app id
     desktopName = "Phoenix";
     comment = "Phoenix desktop client (build ${version})";
     exec = "${pname} %U";
@@ -72,7 +72,7 @@ appimageTools.wrapAppImage {
     # Full hicolor set shipped in the AppImage (icon name: com.discord.libdiscord).
     mkdir -p $out/share
     cp -r --no-preserve=mode ${contents}/usr/share/icons $out/share/
-    install -Dm444 ${desktopItem}/share/applications/${pname}.desktop -t $out/share/applications
+    install -Dm444 ${desktopItem}/share/applications/*.desktop -t $out/share/applications
   '';
 
   passthru = { inherit src contents; };

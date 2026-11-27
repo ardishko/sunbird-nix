@@ -65,7 +65,9 @@ let
 
   desktopItems = [
     (makeDesktopItem {
-      name = "sunbird";
+      # Named after the window's app id (Wayland app_id and X11 WM_CLASS are both
+      # com.discord.libdiscord) so docks and taskbars match the window to this entry.
+      name = "com.discord.libdiscord";
       desktopName = "Sunbird";
       comment = "Phoenix with Sunbird";
       exec = "sunbird %U";
@@ -106,16 +108,13 @@ let
 in
 symlinkJoin {
   name = "sunbird-${sunbird-loader.version}";
-  paths = [
+  # desktopItems first: symlinkJoin keeps the first file for each path, so our
+  # com.discord.libdiscord.desktop replaces the plain client's entry of that name.
+  paths = desktopItems ++ [
     launcher
     gateOnly
     phoenix
-  ]
-  ++ desktopItems;
-  # Hide the plain client's launcher entry; `phoenix` stays on PATH.
-  postBuild = ''
-    rm -f $out/share/applications/phoenix.desktop
-  '';
+  ];
   passthru = {
     inherit phoenix sunbird-loader loaderMode;
     # File name of the link-handler entry, for linking it into ~/.local/share/applications.
