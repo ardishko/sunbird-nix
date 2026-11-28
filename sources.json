@@ -5,8 +5,9 @@
     "hash": "sha256-c4CO5T2i7w3JhFcYQL7A7TMR+p4u8SNsoBxc2C9Vmr4="
   },
   "loader": {
-    "version": "2026.11.26.1717-8559cbe",
-    "url": "https://assets.sunbird.tools/plugins/libphoenix-linux-x86_64.so",
-    "hash": "sha256-Pm34CKy8EP/Ap0o7C/j7wLLteZGWfQIErt+I3HUYFn8="
+    "version": "2026.11.26.2140-47990f4",
+    "rev": "47990f4edddaf0004d2ad69a92ab537df172a360",
+    "hash": "sha256-v4DHYcFlSkLtad7aMpQgo4EeOqpdOKxBrflT2SP1RyQ=",
+    "cargoHash": "sha256-zvsr8LAnZhCTQlgNPgoENyDXtcV8hKPu9s8Ry888xbE="
   }
 }

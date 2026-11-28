@@ -7,7 +7,7 @@ Phoenix (desktop build 2233, AppImage) wrapped with `appimageTools`, plus the Su
 | Output | What it is |
 | --- | --- |
 | `packages.phoenix` | Plain client, `bin/phoenix` |
-| `packages.sunbird-loader` | `libphoenix.so`, pinned by hash |
+| `packages.sunbird-loader` | `libphoenix.so`, built from source at a pinned commit |
 | `packages.sunbird` (default) | `bin/sunbird`, `bin/sunbird-gate-only`, two desktop entries, loader from the store |
 | `packages.sunbird-mutable` | Same, but self-updates the loader into `$XDG_DATA_HOME/sunbird` like upstream, store copy as offline fallback |
 | `nixosModules.default` | `programs.sunbird.enable` / `.package` |
@@ -58,20 +58,20 @@ Quick test: `nix run .` (Sunbird) / `nix run .#gate-only` / `nix run .#phoenix`.
 
 ## Updating
 
-Nothing binary lives in this repo. `sources.json` holds URLs and hashes; Nix downloads the AppImage and loader from upstream at build time.
+Nothing binary lives in this repo. `sources.json` holds URLs, a commit and hashes; at build time Nix downloads the AppImage and builds the loader from source.
 
 ```sh
 ./update.sh   # scrape sunbird.tools + version.json, rewrite sources.json if anything changed
 ```
 
 - Phoenix: build number, URL and SHA-256 come from the sunbird.tools page. The file itself comes from a separate mirror, so Nix checks one source against the other.
-- Loader: Sunbird publishes no hash, so the script downloads it once and hashes it (trust on first use).
+- Loader: built from source. `version.json` names each release as `<UTC date>-<short commit>`; the script pins that commit plus the source and dependency hashes. A commit never changes, so the pin keeps building after upstream releases again.
 
-`.github/workflows/update.yml` runs this every 30 minutes, verifies by fetching through Nix, and opens a PR touching only `sources.json`.
+`.github/workflows/update.yml` runs this every 2 hours, verifies by fetching through Nix, and opens a PR touching only `sources.json`.
 
 ## Known limits
 
-- The loader URL is unversioned and the file changes every release. A pinned hash only builds while upstream still serves that exact file or it is already in your store. CI narrows the gap but cannot close it without mirroring the file. Between upstream's release and your merge, a fresh build fails with a hash mismatch: merge the PR, or use `sunbird-mutable`.
+- A new upstream release only reaches you after `update.sh` (or the bot's PR) pins it; until then you keep the previous, still-building version.
 - Upstream's launcher kills an already running Phoenix that was started without Sunbird. This one does not: quit the plain client first.
 - In-app "Apply Updates" in Sunbird cannot replace the store copy in `pinned` mode. Use `sunbird-mutable` if you want that.
 - The client registers itself as the link handler on every launch, writing its own URL-handler entry into `~/.local/share/applications` that points at its bare binary (no sandbox, no loader) and resetting `mimeapps.list`. Both modules put their own file at that path, which makes the client leave it alone. With just the package, add the `xdg.dataFile` lines shown under Use.
